@@ -48,22 +48,23 @@ async function startServer() {
       if (!image) return res.status(400).json({ error: "Image required" });
 
       const data = await executeWithRetry(() => ai.models.generateContent({
-        model: "gemini-2.0-flash-exp", // Trying newer experimental model for better performance
+        model: "gemini-3-flash-preview", 
         contents: [
           {
             role: "user",
             parts: [
               {
-                text: `You are an expert fitness analyzer. Analyze this body photo and provide an estimate of body fat percentage and muscle distribution. 
-                User Bio: ${JSON.stringify(userData)}
+                text: `You are an elite scientific fitness analyzer. Analyze this body photo with extreme precision. 
+                User Context: ${JSON.stringify(userData)}
                 
                 Provide:
-                1. Estimated Body Fat % (range)
-                2. Body Type Category
-                3. Strengths and areas for improvement
-                4. Advice on posture or specific exercises.
+                1. Calculated Body Fat % range based on visual landmarks (V-taper, vascularity, abdominal definition).
+                2. Precise Body Type (Ectomorph, Mesomorph, Endomorph or Hybrid).
+                3. Biomechanical Strengths and Weaknesses (e.g., high lat attachment, quad dominance).
+                4. Strategic Corrective Advice (posture, muscle imbalances, specific localized training).
+                5. A "Genetic Potential" score (1-10) for the user's current goal.
                 
-                Return the response in JSON format. Answer in Arabic.`
+                The response MUST be in Arabic. Return strictly JSON.`
               },
               {
                 inlineData: {
@@ -82,7 +83,8 @@ async function startServer() {
               bodyFatRange: { type: Type.STRING },
               bodyType: { type: Type.STRING },
               analysis: { type: Type.STRING },
-              advice: { type: Type.STRING }
+              advice: { type: Type.STRING },
+              potentialScore: { type: Type.NUMBER }
             }
           }
         }
@@ -95,12 +97,67 @@ async function startServer() {
     }
   });
 
+  // API to analyze meal from photo
+  app.post("/api/analyze-meal", async (req, res) => {
+    try {
+      const { image } = req.body;
+      if (!image) return res.status(400).json({ error: "Image required" });
+
+      const data = await executeWithRetry(() => ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: `Analyze this meal photo and estimate the nutritional content. Identify all food items.
+                Output:
+                1. Meal Name
+                2. Estimated Calories
+                3. Protein, Carbs, Fats (grams)
+                4. Health Score (1-10)
+                5. Expert Insight (why it is good or what to add for better balance)
+                
+                The response MUST be in Arabic. Return strictly JSON.`
+              },
+              {
+                inlineData: {
+                  mimeType: "image/jpeg",
+                  data: image.split(",")[1]
+                }
+              }
+            ]
+          }
+        ],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              mealName: { type: Type.STRING },
+              calories: { type: Type.NUMBER },
+              protein: { type: Type.NUMBER },
+              carbs: { type: Type.NUMBER },
+              fats: { type: Type.NUMBER },
+              healthScore: { type: Type.NUMBER },
+              insight: { type: Type.STRING }
+            }
+          }
+        }
+      }));
+      res.json(JSON.parse(data.text || "{}"));
+    } catch (error: any) {
+      console.error("Meal Analysis Error:", error);
+      res.status(error.code || 500).json({ error: "Failed to analyze meal" });
+    }
+  });
+
   // API to generate recipe based on macros and preferences
   app.post("/api/generate-recipe", async (req, res) => {
     try {
       const { preferences, mealType } = req.body;
       const data = await executeWithRetry(() => ai.models.generateContent({
-        model: "gemini-2.0-flash-exp",
+        model: "gemini-3-flash-preview",
         contents: [
           {
             text: `Generate a healthy recipe for ${mealType} based on: ${JSON.stringify(preferences)}.
@@ -141,7 +198,7 @@ async function startServer() {
     try {
       const userData = req.body;
       const data = await executeWithRetry(() => ai.models.generateContent({
-        model: "gemini-2.0-flash-exp", 
+        model: "gemini-3-flash-preview", 
         contents: [
           {
             text: `You are a professional AI Fitness Coach and Nutritionist. Generate a 100% personalized fitness and diet plan based on the following user data:
@@ -188,7 +245,8 @@ async function startServer() {
                               name: { type: Type.STRING },
                               sets: { type: Type.NUMBER },
                               reps: { type: Type.STRING },
-                              rest: { type: Type.STRING }
+                              rest: { type: Type.STRING },
+                              muscleGroup: { type: Type.STRING }
                             }
                           }
                         },
@@ -248,7 +306,7 @@ async function startServer() {
     try {
       const { message, userData } = req.body;
       const chat = ai.chats.create({
-        model: "gemini-2.0-flash-exp",
+        model: "gemini-3-flash-preview",
         config: {
           systemInstruction: `You are the Fitness AI Coach. You are helping a user with their fitness and diet.
           User Profile: ${JSON.stringify(userData)}
@@ -262,6 +320,43 @@ async function startServer() {
     } catch (error: any) {
       console.error("Chat Error:", error);
       res.status(error.code || 500).json({ error: "Failed to process chat" });
+    }
+  });
+
+  // API to generate expert insight of the day
+  app.post("/api/expert-insight", async (req, res) => {
+    try {
+      const { userData, weightHistory } = req.body;
+      const data = await executeWithRetry(() => ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [
+          {
+            text: `You are an elite high-performance biohacker and coach. Based on this user's data: ${JSON.stringify(userData)} and weight history: ${JSON.stringify(weightHistory)}, provide ONE deep biometric insight for today.
+            Focus on trends, recovery, metabolic state, or psychological motivation.
+            Output:
+            1. Title (Short)
+            2. Insight (1-2 sentences)
+            3. Actionable Tip
+            
+            The response MUST be in Arabic. Return strictly JSON.`
+          }
+        ],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              title: { type: Type.STRING },
+              insight: { type: Type.STRING },
+              tip: { type: Type.STRING }
+            }
+          }
+        }
+      }));
+      res.json(JSON.parse(data.text || "{}"));
+    } catch (error: any) {
+      console.error("Insight Error:", error);
+      res.status(500).json({ error: "Failed to generate insight" });
     }
   });
 

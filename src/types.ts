@@ -34,6 +34,7 @@ export interface Exercise {
   sets: number;
   reps: string;
   rest: string;
+  muscleGroup?: string;
 }
 
 export interface WorkoutDay {
