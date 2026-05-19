@@ -1,0 +1,102 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Basic user profile and settings",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "language": { "type": "string", "enum": ["ar", "en"] },
+        "goal": { "type": "string" },
+        "preferences": {
+          "type": "object",
+          "properties": {
+            "waterReminder": { "type": "boolean" },
+            "sleepReminder": { "type": "boolean" },
+            "units": { "type": "string", "enum": ["metric", "imperial"] }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "WeightLog": {
+      "title": "Weight Log",
+      "description": "Daily weight tracking",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "weight": { "type": "number" },
+        "date": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "weight", "date"]
+    },
+    "FitnessPlan": {
+      "title": "Fitness Plan",
+      "description": "AI generated fitness and nutrition plan",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "planData": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "planData", "createdAt"]
+    },
+    "WaterIntake": {
+      "title": "Water Intake",
+      "description": "Daily water tracking",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string", "format": "date" }
+      },
+      "required": ["userId", "amount", "date"]
+    },
+    "ProgressPhoto": {
+      "title": "Progress Photo",
+      "description": "User body scan photos for AI analysis",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "analysis": {
+          "type": "object",
+          "properties": {
+            "bodyFat": { "type": "number" },
+            "muscleMass": { "type": "number" },
+            "notes": { "type": "string" }
+          }
+        },
+        "date": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "photoUrl", "date"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Individual user settings and profile"
+    },
+    "/users/{userId}/weightLogs/{logId}": {
+      "schema": "WeightLog",
+      "description": "Weight history for a user"
+    },
+    "/users/{userId}/plans/{planId}": {
+      "schema": "FitnessPlan",
+      "description": "Plans history for a user"
+    },
+    "/users/{userId}/water/{date}": {
+      "schema": "WaterIntake",
+      "description": "Water intake tracking per day"
+    },
+    "/users/{userId}/progressPhotos/{photoId}": {
+      "schema": "ProgressPhoto",
+      "description": "Body analysis photo history"
+    }
+  }
+}

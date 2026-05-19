@@ -1,0 +1,6 @@
+{
+  "name": "Fitness AI - Personal Trainer & Nutritionist",
+  "description": "An AI-powered fitness and nutrition platform that generates 100% personalized workout and diet plans based on your body data and goals.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
